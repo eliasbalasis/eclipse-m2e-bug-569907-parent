@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation=" http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>com.myorganization.mybusiness</groupId>
+		<artifactId>myroot</artifactId>
+		<version>0.0.1-SNAPSHOT</version>
+	</parent>
+
+	<artifactId>myparent</artifactId>
+
+	<packaging>pom</packaging>
+
+	<scm>
+		<connection>scm:git:http://myorganization.com/bitbucket/scm/myorganization/parent.git</connection>
+		<developerConnection>scm:git:http://myorganization.com/bitbucket/scm/myorganization/parent.git</developerConnection>
+		<tag>HEAD</tag>
+	</scm>
+
+	<properties>
+		<version.docker-maven-plugin>0.34.1</version.docker-maven-plugin>
+
+		<version.tools.BOM>0.0.1-SNAPSHOT</version.tools.BOM>
+
+		<!--
+		Docker + Cloud
+		-->
+		<properties.project.DockerImages.skip>true</properties.project.DockerImages.skip>
+		<properties.project.DockerImages.skipPush>true</properties.project.DockerImages.skipPush>
+		<properties.project.DockerImages.pushRegistry>UNDEFINED</properties.project.DockerImages.pushRegistry>
+		<properties.project.DockerImages.retries></properties.project.DockerImages.retries>
+		<docker.host></docker.host>
+		<docker.certPath />
+		<docker.showLogs>true</docker.showLogs>
+		<docker.autoCreateCustomNetworks>false</docker.autoCreateCustomNetworks>
+
+		<!--
+		Properties for all concrete projects
+		-->
+		<myproperty1></myproperty1>
+		<myproperty2></myproperty2>
+		<myproperty3></myproperty3>
+	</properties>
+
+	<modules>
+		<module>modules/spring-boot-2</module>
+	</modules>
+
+	<dependencyManagement>
+		<dependencies>
+			<!--
+			This MUST be first
+			so that transitive dependencies can be preserved
+			-->
+			<dependency>
+				<groupId>com.myorganization.mybusiness</groupId>
+				<artifactId>mytools.BOM</artifactId>
+				<version>${version.tools.BOM}</version>
+				<scope>import</scope>
+				<type>pom</type>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
+	<build>
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>org.eclipse.m2e</groupId>
+					<artifactId>lifecycle-mapping</artifactId>
+					<version>${version.eclipe-lifecycle-mapping.plugin}</version>
+					<configuration>
+						<lifecycleMappingMetadata>
+							<pluginExecutions>
+								<!--
+								Ignore execution of Maven plugins
+								not running with Eclipse IDE environment
+								-->
+								<pluginExecution>
+									<pluginExecutionFilter>
+										<groupId>org.apache.maven.plugins</groupId>
+										<artifactId>maven-dependency-plugin</artifactId>
+										<versionRange>[${version.maven-dependency-plugin},)</versionRange>
+										<goals>
+											<goal>copy</goal>
+										</goals>
+									</pluginExecutionFilter>
+									<action>
+										<ignore />
+									</action>
+								</pluginExecution>
+							</pluginExecutions>
+						</lifecycleMappingMetadata>
+					</configuration>
+				</plugin>
+				<plugin>
+					<groupId>io.fabric8</groupId>
+					<artifactId>docker-maven-plugin</artifactId>
+					<version>${version.docker-maven-plugin}</version>
+					<configuration>
+						<dockerHost>${docker.host}</dockerHost>
+						<certPath>${docker.certPath}</certPath>
+						<imagePullPolicy>IfNotPresent</imagePullPolicy>
+						<verbose>true</verbose>
+						<useColor>true</useColor>
+						<showLogs>true</showLogs>
+					</configuration>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+	</build>
+
+	<profiles>
+		<profile>
+			<id>EnvironmentTests</id>
+			<activation>
+				<activeByDefault>false</activeByDefault>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-failsafe-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>EnvironmentTestsExecution</id>
+								<goals>
+									<goal>integration-test</goal>
+									<goal>verify</goal>
+								</goals>
+								<configuration>
+									<forkCount>1</forkCount>
+									<reuseForks>true</reuseForks>
+									<includes>
+										<include>**/*EnvironmentTest.java</include>
+									</includes>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		<profile>
+			<id>DockerImages</id>
+			<activation>
+				<activeByDefault>false</activeByDefault>
+			</activation>
+			<build>
+				<pluginManagement>
+					<plugins>
+						<plugin>
+							<groupId>io.fabric8</groupId>
+							<artifactId>docker-maven-plugin</artifactId>
+							<version>${version.docker-maven-plugin}</version>
+						</plugin>
+					</plugins>
+				</pluginManagement>
+				<plugins>
+					<plugin>
+						<groupId>io.fabric8</groupId>
+						<artifactId>docker-maven-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>DockerImages.docker</id>
+								<phase>pre-integration-test</phase>
+								<goals>
+									<goal>stop</goal>
+									<goal>remove</goal>
+									<goal>build</goal>
+									<goal>start</goal>
+									<goal>push</goal>
+								</goals>
+								<configuration>
+									<keepContainer>false</keepContainer>
+									<keepRunning>false</keepRunning>
+									<removeVolumes>true</removeVolumes>
+									<allContainers>true</allContainers>
+									<removeMode>data</removeMode>
+									<skip>${properties.project.DockerImages.skip}</skip>
+									<skipPush>${properties.project.DockerImages.skipPush}</skipPush>
+									<pushRegistry>${properties.project.DockerImages.pushRegistry}</pushRegistry>
+									<retries>${properties.project.DockerImages.retries}</retries>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
+
+</project>
