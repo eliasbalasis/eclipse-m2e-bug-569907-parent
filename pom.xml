@@ -40,9 +40,8 @@
 		<!--
 		Properties for all concrete projects
 		-->
-		<myproperty1></myproperty1>
-		<myproperty2></myproperty2>
-		<myproperty3></myproperty3>
+		<properties.myparent.myInheritedProperty>value1</properties.myparent.myInheritedProperty>
+		<properties.myapplication.myInheritedProperty>value2</properties.myapplication.myInheritedProperty>
 	</properties>
 
 	<modules>
